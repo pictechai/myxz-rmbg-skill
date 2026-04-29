@@ -2,6 +2,9 @@
 
 **—— 跨境电商专用：一键生成亚马逊白底图/透明素材图**
 
+<img width="1600" height="800" alt="未命名的设计 (29)" src="https://github.com/user-attachments/assets/b03429ba-7b32-42b2-b32c-0586087229ee" />
+
+
 
 ## 🌟 为什么跨境卖家需要它？
 
