@@ -1,4 +1,3 @@
-
 ---
 name: myxz-rmbg-skill
 description: 妙言小智 (PicTech.cc) 专业级跨境电商图片抠图/白底图工具，支持批量图片抠图/白底图。
