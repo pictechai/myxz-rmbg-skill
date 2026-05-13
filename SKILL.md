@@ -1,124 +1,215 @@
 ---
 name: myxz-rmbg-skill
-description: 妙言小智 (PicTech.cc) 专业级跨境电商图片抠图/白底图工具，支持批量图片抠图/白底图。
+description: 妙言小智 (PicTech.cc) 专业级跨境电商图片抠图/白底图工具。使用本 skill 处理图片去背景、透明底图、白底图、纯色背景图、本地图片、网络图片、文件夹图片和批量抠图任务。
 ---
 
----
+# 妙言小智 PicTech.cc 抠图 Skill
 
-# 🎨 妙言小智(PicTech.cc)抠图SKILL
 **妙言小智官方网站**: [https://www.pictech.cc](https://www.pictech.cc)  
-**服务提供商**: [https://stableai.com.cn](https://stableai.com.cn) (妙言小智技术服务支持)
+**妙言小智 API 服务**: [https://stableai.com.cn](https://stableai.com.cn)  
+**VK(APP KEY) 获取地址**: [https://www.pictech.cc/newpictech/skills/openclaw-image-translation-skill](https://www.pictech.cc/newpictech/skills/openclaw-image-translation-skill)
 
----
+## 核心规则
 
-# 🌐 服务说明
-本 Skill 是由 pictech.cc 提供的专业级 AI 智能抠图工具，支持高精度边缘检测，能够一键去除图片背景或替换为指定颜色。
+当用户请求抠图、去背景、移除背景、透明底图、白底图、纯色背景图、商品图背景处理或批量图片去背景时，使用本 skill。
 
-- **API 服务**: `https://stableai.com.cn/myxz/skill/rmbg`
-- **核心能力**: 智能发丝级抠图、批量处理、透明/实色背景切换、本地缓存加速。
-- **数据安全**: 图片仅用于实时推理，处理完成后不进行持久化存储。
+不要自己手写抠图逻辑。不要直接在回复中调用 RMBG API。应调用本 skill 目录下 `index.js` 的默认导出函数 `run(params)`。
 
----
+## 调用方式
 
-# 🔐 API Key（VK）管理规则（非常重要）
+调用同目录下的 `index.js`：
 
-本 Skill 依赖 VK (Value Key) 进行鉴权。为了保证用户体验，AI Agent 必须遵循以下规则：
+```js
+import run from './index.js';
 
-## ✔ 获取方式
-用户需前往 [https://www.pictech.cc](https://www.pictech.cc) 申请专用 VK 密钥。
+const result = await run({
+  input: '图片路径、图片URL、文件夹路径，或它们组成的数组',
+  saveDir: '可选的保存目录',
+  backgroundColor: '可选，用户要求白底时传 "#ffffff"',
+  vk: '可选，优先使用用户配置或环境变量 RMBG_VK'
+});
+```
 
-## ✔ 使用规则
-1. **自动读取**: 系统优先从 `config.vk` 读取配置。
-2. **零干扰原则**: 只要 `config.vk` 中已配置密钥，**禁止**在对话中反复询问用户获取 VK。
-3. **一次配置**: 用户只需在插件全局设置中填写一次 VK，即可在后续所有任务中生效。
+最小调用：
 
-## ❌ 禁止行为
-- ❌ 禁止在 `params.input` 中要求用户输入 VK。
-- ❌ 禁止在每次任务执行前弹出 VK 输入提示。
+```js
+const result = await run({
+  input: '/path/to/image.jpg'
+});
+```
 
----
+批量调用：
 
-# ⚙️ Inputs 参数说明
+```js
+const result = await run({
+  input: [
+    '/path/to/1.jpg',
+    '/path/to/2.png',
+    'https://example.com/image.jpg'
+  ],
+  saveDir: '/path/to/output'
+});
+```
 
-## 1. input（必填）
-支持多样化的资源输入方式：
-- **图片 URL**: 直接提供网络图片链接。
-- **本地路径**: 单张图片的绝对路径。
-- **文件夹路径**: 指定整个目录，Skill 将自动识别并批量处理其中的图片文件。
-- **混合输入**: 支持以逗号分隔的多个路径或 URL。
+白底图调用：
 
-## 2. saveDir（可选）
-处理结果的保存位置。
-- **默认路径**: `用户目录/myxz-result/bgremove`
-- **自动归档**: 系统会自动按 `日期/批次ID` 创建子文件夹，避免文件覆盖。
+```js
+const result = await run({
+  input: '/path/to/image.jpg',
+  backgroundColor: '#ffffff'
+});
+```
 
-## 3. backgroundColor（可选）
-- **默认值**: 留空则输出 **透明背景 (PNG)**。
-- **支持格式**: 颜色名称（如 `white`, `red`）或 Hex 色值（如 `#FFFFFF`）。
+黑底图调用：
 
----
+```js
+const result = await run({
+  input: '/path/to/image.jpg',
+  backgroundColor: '#000000'
+});
+```
 
-# 🧠 执行逻辑（Agent 必须遵守）
+## 输入参数
 
-1. **资源解析**: 自动区分 URL、文件和文件夹，并过滤不支持的文件格式。
-2. **秒传缓存**: 基于图片内容哈希 (Hash) 检查，若同一张图片已处理过且背景色一致，则直接调用本地结果，实现秒级响应。
-3. **异步处理**: 
-   - 提交任务后进入轮询状态（每秒查询一次）。
-   - 状态码 `200` 表示成功，`202` 表示处理中。
-4. **异常处理**: 针对网络超时、文件过大（>15MB）、VK 校验失败等情况提供明确的错误反馈。
-
----
-
-# 📦 输出格式规范
-
-任务完成后，必须向用户展示结构化的任务报告：
-
-## 示例报告结构
-
-```json
+```js
 {
-  "任务状态": "🎉 处理完成！(成功: 1 / 总计: 1)",
-  "本地保存目录": "C:/Users/Admin/myxz-result/bgremove/2024-04-28/a1b2c3",
-  "成功清单": [
-    {
-      "素材名": "product_photo.jpg",
-      "任务id": "rmbg_task_xxxx",
-      "原始来源": "D:/Images/product_photo.jpg",
-      "远程预览": "https://stableai.com.cn/temp/result.png",
-      "本地路径": "C:/Users/.../product_photo_no_bg.png"
-    }
-  ]
+  input: string | string[],
+  saveDir?: string,
+  backgroundColor?: string,
+  vk?: string,
+  config?: {
+    vk?: string
+  }
 }
 ```
 
----
+## 参数说明
 
-# 🚀 使用示例
+- `input` 必填。支持本地图片路径、图片文件夹路径、图片 URL、逗号分隔的字符串，或由路径/URL 组成的数组。
+- `saveDir` 可选。未提供时，结果保存到当前工作目录下的 `myxz-result/bgremove-v2`。
+- `backgroundColor` 可选。用户没有明确要求纯色背景时不要传，默认输出透明背景 PNG。
+- `vk` 或 `config.vk` 可选。如果环境变量 `RMBG_VK` 已存在，可以不传。
+- 不要在回复、日志或错误信息中暴露 VK、API Key、请求头或其他敏感信息。
 
-## 场景 A：单张透明背景抠图
-```json
+## 背景颜色规则
+
+- 用户要求“透明底”“透明背景”“PNG 透明图”时，不传 `backgroundColor`。
+- 用户要求“白底图”“亚马逊白底图”“白色背景”时，传 `backgroundColor: '#ffffff'`。
+- 用户要求“黑底图”“黑色背景”时，传 `backgroundColor: '#000000'`。
+- 用户指定其他颜色时，尽量转换为标准 CSS 色值，例如 `'#ff0000'`。
+- 用户没有明确说要纯色背景时，默认透明背景。
+
+## 适用请求
+
+使用本 skill 处理：
+
+- 单张图片抠图。
+- 多张图片批量抠图。
+- 文件夹图片批量去背景。
+- 网络图片 URL 去背景。
+- 商品图透明底处理。
+- 商品图白底处理。
+- 跨境电商主图白底处理。
+- 去除背景后替换为指定纯色背景。
+
+不要使用本 skill 处理：
+
+- 普通修图。
+- 图片压缩。
+- 图片裁剪。
+- 图片放大。
+- 图片风格转换。
+- 替换图片中的物体。
+- 与背景移除无关的图片编辑任务。
+
+## 工作流程
+
+1. 从用户请求中识别图片输入，可以是路径、URL、文件夹或图片列表。
+2. 如果用户没有提供任何可用图片输入，先询问用户提供图片路径、URL 或文件夹。
+3. 根据用户需求决定是否设置 `backgroundColor`。
+4. 调用本 skill 目录下 `index.js` 的默认导出函数 `run(params)`。
+5. 不要自行实现 API 请求、轮询、下载或缓存逻辑，这些由执行器处理。
+6. 根据返回对象向用户说明处理结果、保存目录、成功文件和失败原因。
+
+## 返回值结构
+
+执行器返回：
+
+```js
 {
-  "input": "https://example.com/item.jpg"
+  success: boolean,
+  partialSuccess: boolean,
+  message: string,
+  error?: string,
+  data?: {
+    batchId: string,
+    saveDir: string,
+    total: number,
+    successCount: number,
+    failedCount: number,
+    backgroundColor: string,
+    results: Array<{
+      input: string,
+      fileName: string,
+      taskId: string,
+      resultUrl: string,
+      localPath: string,
+      cached: boolean
+    }>,
+    failures: Array<{
+      input: string,
+      fileName: string,
+      error: string
+    }>
+  }
 }
 ```
 
-## 场景 B：批量将文件夹内的图片换成白底
-```json
-{
-  "input": "D:/Work/Shopee_Images",
-  "backgroundColor": "white",
-  "saveDir": "E:/Finished_Work"
-}
-```
+## 返回值读取规则
 
----
+- `success === true` 表示至少有一张图片处理成功。
+- `partialSuccess === true` 表示部分成功、部分失败。
+- `data.results` 是成功结果列表。
+- `data.failures` 是失败结果列表。
+- `data.saveDir` 是本批次结果保存目录。
+- `data.results[].localPath` 是本地结果文件路径。
+- `data.results[].resultUrl` 是远程结果地址。
+- `data.results[].cached === true` 表示结果来自本地缓存。
+- `success === false` 时，应读取 `error` 或 `message` 说明失败原因。
 
-# 🔒 安全与限制
-- **文件限制**: 单张图片大小不得超过 **15MB**。
-- **格式支持**: 主要支持 JPG, PNG, WEBP 等主流格式。
-- **隐私保护**: 请勿上传包含敏感个人信息的图片。
+## 回复规范
 
----
+处理成功时，回复应包含：
 
-# 🧩 Skill 运行入口
-本 Skill 由 `index.js` 中的 `run` 函数驱动，所有依赖已在 `package.json` 中声明。
+- 成功处理数量。
+- 总图片数量。
+- 保存目录 `data.saveDir`。
+- 单张图片时可直接给出 `data.results[0].localPath`。
+
+批量部分成功时，回复应包含：
+
+- 成功数量。
+- 失败数量。
+- 保存目录。
+- 失败文件名和失败原因。
+
+全部失败时，回复应包含：
+
+- 失败原因。
+- 是否缺少 VK、输入路径无效、文件超过大小限制、网络图片无法访问或服务处理超时。
+
+不要回复：
+
+- VK 或 API Key。
+- 原始请求头。
+- 内部堆栈。
+- 无必要的远程接口细节。
+- 大段技术日志。
+
+## 限制
+
+- 单张本地图片不能超过 15 MB。
+- 文件夹输入只会处理通过内置格式校验的图片文件。
+- URL 输入依赖远程图片可访问性。
+- 输出结果保存为 PNG 文件。
+- 如果同一图片的哈希已有成功记录且本地文件存在，执行器可能直接复用缓存结果。
